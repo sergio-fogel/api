@@ -9,6 +9,7 @@ packages = [{include = "FastAPI"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 fastapi = {extras = ["all"], version = "^0.89.1"}
+pydantic = "^1.10.4"
 
 
 [build-system]
