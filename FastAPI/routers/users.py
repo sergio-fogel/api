@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 
-app = FastAPI()
+router = APIRouter(
+    tags=["users"], # para agrupar en la doc
+)
 
 
 # Entidad user
@@ -19,36 +21,36 @@ users_fake_db = [
 
 
 # Get
-@app.get("/users")
+@router.get("/users")
 async def users():
     return users_fake_db
 
 # Get / Path --> 127.0.0.1:8000/user/1
-@app.get("/user/{id}")
+@router.get("/user/{id}")
 async def user(id: int):
     return search_user(id)
 
 # Get / Query --> 127.0.0.1:8000/user/?id=1           más parámetros, concatenar: /user/?id=1&name=Pedro...
-@app.get("/user/")
+@router.get("/user/")
 async def user(id: int):
     return search_user(id)
 
 
 # Post
-@app.post("/user/")
+@router.post("/user/", response_model=User, status_code=201)
 async def user(user: User):
     if type(search_user(user.id)) == User:
-        return {"error": "El usuario ya esxiste"}
+        raise HTTPException(status_code=404, detail="El usuario ya esxiste")
     else:
         users_fake_db.append(user)
         return user
 
-# fake JSON para testear POST
+# fake body (JSON) para testear POST
 # {"id": 4, "name": "Sergio", "surname": "Fogel", "age": 34}
 
 
 # Put
-@app.put("/user/")
+@router.put("/user/")
 async def user(user: User):
 
     found = False
@@ -63,12 +65,12 @@ async def user(user: User):
     else:
         return user
 
-# fake JSON para testear PUT
+# fake body (JSON) para testear PUT
 # {"id": 4, "name": "Sergio", "surname": "Fogel", "age": 18}
 
 
 # Delete
-@app.delete("/user/{id}")
+@router.delete("/user/{id}")
 async def user(id: int):
 
     found = False
