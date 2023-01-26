@@ -12,6 +12,7 @@ fastapi = {extras = ["all"], version = "^0.89.1"}
 pydantic = "^1.10.4"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+pymongo = "^4.3.3"
 
 
 [build-system]
