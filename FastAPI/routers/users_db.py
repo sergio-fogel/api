@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from db.models.user import User
-from db.schemas.user import user_schema
+from db.schemas.user import user_schema, users_schema
 from db.client import db_client
+from bson import ObjectId
 
 
 router = APIRouter(
@@ -11,86 +12,72 @@ router = APIRouter(
 )
 
 
-users_fake_db = []
-
-
 # Get
-@router.get("/")
+@router.get("/", response_model=list[User])
 async def users():
-    return users_fake_db
+    return users_schema(db_client.local.users.find())
 
-# Get / Path --> 127.0.0.1:8000/user/1
+# Get / Path
 @router.get("/{id}")
-async def user(id: int):
-    return search_user(id)
+async def user(id: str):
+    return search_user("_id", ObjectId(id))
 
-# Get / Query --> 127.0.0.1:8000/user/?id=1           más parámetros, concatenar: /user/?id=1&name=Pedro...
+# Get / Query
 @router.get("/")
-async def user(id: int):
-    return search_user(id)
+async def user(id: str):
+    return search_user("_id", ObjectId(id))
 
 
 # Post
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 async def user(user: User):
 
-#    if type(search_user(user.id)) == User:
-#        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El usuario ya esxiste")
+    if type(search_user("email", user.email)) == User:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El usuario ya esxiste")
 
-        user_dict = dict(user)
-        del user_dict["id"]
+    user_dict = dict(user)
+    del user_dict["id"]
 
-        id = db_client.local.users.insert_one(user_dict).inserted_id
+    id = db_client.local.users.insert_one(user_dict).inserted_id
 
-        new_user = user_schema(db_client.local.users.find_one({"_id": id}))
+    new_user = user_schema(db_client.local.users.find_one({"_id": id}))
         
-        return User(**new_user)
+    return User(**new_user)
 
 # fake body (JSON) para testear POST
-# {"username": "elseryei", "age": 34}
+# {"username": "sergio", "email": "sergio@fastapi.com"}
 
 
 # Put
-@router.put("/")
+@router.put("/", response_model=User)
 async def user(user: User):
 
-    found = False
+    user_dict = dict(user)
+    del user_dict["id"]
 
-    for index, saved_user in enumerate(users_fake_db):
-        if saved_user.id == user.id:
-            users_fake_db[index] = user
-            found = True
+    try:
+        db_client.local.users.find_one_and_replace(
+            {"_id": ObjectId(user.id)}, user_dict)
+    except:
+        return {"error": "No se ha actualizado el usuario"}
 
-    if not found:
-        return {"error": "No se ha actualizado el Usuario"}
-    else:
-        return user
-
-# fake body (JSON) para testear PUT
-# {"username": "elseryei", "age": 17}
+    return search_user("_id", ObjectId(user.id))
 
 
 # Delete
-@router.delete("/{id}")
-async def user(id: int):
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def user(id: str):
 
-    found = False
+    found = db_client.local.users.find_one_and_delete({"_id": ObjectId(id)})
 
-    for index, saved_user in enumerate(users_fake_db):
-        if saved_user.id == id:
-            del users_fake_db[index]
-            found = True
-    
     if not found:
         return {"error": "No se ha eliminado el usuario"}
 
-# /user/4
 
-
-def search_user(id: int):
-    users = filter(lambda user: user.id == id, users_fake_db)
+def search_user(field: str, key):
     try:
-        return list(users)[0]
+        user = db_client.local.users.find_one({field: key})
+        return User(**user_schema(user))
     except:
         return {"error": "No se ha encontrado el Usuario"}
 

@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "FastAPI"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 fastapi = {extras = ["all"], version = "^0.89.1"}
 pydantic = "^1.10.4"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
