@@ -1,0 +1,7 @@
+fastapi
+pydantic
+python-jose
+passlib
+bcrypt
+pymongo
+python-multipart
