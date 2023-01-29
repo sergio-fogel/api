@@ -1,0 +1,32 @@
+# mongodb://root:example@localhost:27017/
+
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    hostname: test_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongo-db-volume:/data/db
+
+
+  fastapi:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    hostname: test_fastapi
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./FastAPI/:/app
+    depends_on:
+      - mongo
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
